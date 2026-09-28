@@ -4,7 +4,7 @@ Ableton LiveをCodex / AntigravityなどのMCPクライアントから操作す�
 
 ![Live Bridge mascot](assets/bridge-mascot.png)
 
-MCPサーバー v0.5 / Maxデバイス v0.4。Windows・Live 11.3.43で既存実装を検証しています。このリポジトリの生成版デバイスは構造検証済みですが、Liveへの読み込みは別途確認が必要です。
+MCPサーバー v0.6 / Maxデバイス v0.5。Windows・Live 11.3.43で既存実装を検証しています。このリポジトリの生成版デバイスは構造検証済みですが、Liveへの読み込みは別途確認が必要です。
 
 ## できること
 
@@ -45,6 +45,10 @@ npm test
 4. MCPを再接続し、`live_status`と`live_list_tracks`で確認します。L2挿入を使う場合は[ブラウザー連携](docs/ブラウザー連携.md)も設定します。
 
 WindowsではJSON内のパスを`C:/...`形式にすると記述しやすくなります。SETUPはプロンプトを表示するだけで、設定を自動変更しません。現在の会話でツールが更新されない場合はクライアント側の再接続が必要です。
+
+## 新しいMIDIクリップの作成
+
+live_create_clipでノート配列からSessionクリップを作成し、任意の拍位置にArrangementへ配置できます。[引数・例・制限](docs/create-clip.md)を参照してください。
 
 ## 構成
 

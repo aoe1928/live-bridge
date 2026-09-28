@@ -30,13 +30,58 @@ function changeScalar(a,key,value,expected,low,high,integer){if(typeof value!=='
 function delayedVerify(req,a,key,change){var task=new Task(function(){try{var after=Number(val(a,key));if(Math.abs(after-change.requested)>0.00001)throw new Error('Read-back differs; inspect current state');var r={before:change.before,after:after,verified:true,session:SESSION};cache[req.id]=r;reply(req.id,r);}catch(e){reply(req.id,null,String(e));}},this);tasks.push(task);task.schedule(150);}
 
 function fingerprint(ns) {var sorted=ns.slice().sort(function(a,b){return a.note_id-b.note_id;}),s=JSON.stringify(sorted),h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h+=(h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24);}return String(h>>>0);}
+// Creation is staged because Live applies clip and note changes asynchronously.
+var clipRequests = {};
+function validateNewClip(req) {
+ if(typeof req.trackId!=='number'||req.trackId<1||req.trackId!==Math.floor(req.trackId))throw new Error('Invalid trackId');
+ if(typeof req.length!=='number'||!isFinite(req.length)||req.length<=0||req.length>256)throw new Error('length must be > 0 and <= 256 beats');
+ if(req.destinationBeat!==undefined){finiteBeat(req.destinationBeat);if(req.destinationBeat+req.length>1576800)throw new Error('Destination exceeds timeline range');}
+ if(!(req.notes instanceof Array)||req.notes.length>128)throw new Error('Expected 0..128 notes');
+ var bounds={pitch:[0,127],start_time:[0,req.length],duration:[0,req.length],velocity:[0,127],mute:[0,1],probability:[0,1],velocity_deviation:[-127,127],release_velocity:[0,127]};
+ for(var i=0;i<req.notes.length;i++){
+  var n=req.notes[i];if(!n||typeof n!=='object'||n instanceof Array)throw new Error('Invalid note');
+  for(var k in n){var b=bounds[k];if(!b||typeof n[k]!=='number'||!isFinite(n[k])||n[k]<b[0]||n[k]>b[1])throw new Error('Invalid note '+k);}
+  if(n.pitch!==Math.floor(n.pitch)||typeof n.start_time!=='number'||typeof n.duration!=='number'||n.duration<=0||n.start_time>=req.length||n.start_time+n.duration>req.length)throw new Error('Invalid note timing or pitch');
+  if(n.mute!==undefined&&n.mute!==0&&n.mute!==1)throw new Error('mute must be 0 or 1');
+ }
+}
+function createMidiClip(req) {
+ if(clipRequests[req.id]){var previous=clipRequests[req.id];reply(req.id,previous.result||null,previous.error||null);return;}
+ validateNewClip(req);assertWrite(req);
+ var t=track(req.trackId),song=api('live_set');
+ if(ids(song,'tracks').indexOf(Number(t.id))<0||!Number(val(t,'has_midi_input'))||Number(val(t,'is_foldable'))||Number(val(t,'is_frozen')))throw new Error('Target must be an unfrozen MIDI track');
+ function guard(){assertWrite(req);track(req.trackId);if(Number(val(song,'record_mode'))||Number(val(song,'session_record')))throw new Error('Disable recording before creating clips');if(Number(val(t,'is_frozen')))throw new Error('Track became frozen');}
+ function checkDestination(){if(req.destinationBeat===undefined)return;var clips=ids(t,'arrangement_clips');for(var i=0;i<clips.length;i++){var c=byId(clips[i]);if(Number(val(c,'start_time'))<req.destinationBeat+req.length&&Number(val(c,'end_time'))>req.destinationBeat)throw new Error('Destination overlaps an existing Arrangement clip');}}
+ guard();checkDestination();
+ var slots=ids(t,'clip_slots'),slot=null,index=-1;
+ for(var i=0;i<slots.length;i++){var candidate=byId(slots[i]);if(!Number(val(candidate,'has_clip'))){slot=candidate;index=i;break;}}
+ if(!slot)throw new Error('No empty Session clip slot');
+ var record={error:'Clip creation pending; inspect before retry'},clip=null,beforeArrangement=null;
+ clipRequests[req.id]=record;
+ function fail(e){record.error=String(e)+'; partial creation may remain. Inspect track '+req.trackId+', Session slot '+index+(clip?', clip '+clip.id:'')+' and Arrangement before retry.';reply(req.id,null,record.error);}
+ function later(fn){var task=new Task(function(){try{guard();fn();}catch(e){fail(e);}},this);tasks.push(task);task.schedule(200);}
+ function verifyNotes(c){var read=notes(c);if(read.length!==req.notes.length)throw new Error('Note count verification failed');return read;}
+ function done(arrangement){var result={session:SESSION,trackId:Number(t.id),createdClip:clipInfo(clip),sessionSlot:index,noteCount:req.notes.length,arrangementClip:arrangement?clipInfo(arrangement):null,destinationBeat:req.destinationBeat===undefined?null:req.destinationBeat,verified:true};record.error=null;record.result=result;cache[req.id]=result;reply(req.id,result);}
+ try{slot.call('create_clip',req.length);}catch(e){fail(e);return;}
+ later(function(){
+  clip=byId(ids(slot,'clip')[0]);if(!Number(val(clip,'is_midi_clip'))||notes(clip).length)throw new Error('Expected newly created empty MIDI clip');
+  clip.call('add_new_notes',JSON.stringify({notes:req.notes}));
+  later(function(){
+   verifyNotes(clip);if(req.destinationBeat===undefined){done(null);return;}
+   checkDestination();beforeArrangement=ids(t,'arrangement_clips');
+   t.call('duplicate_clip_to_arrangement','id '+clip.id,req.destinationBeat);
+   later(function(){var current=ids(t,'arrangement_clips'),added=[];for(var i=0;i<current.length;i++)if(beforeArrangement.indexOf(current[i])<0)added.push(current[i]);if(added.length!==1)throw new Error('Arrangement creation verification failed');var placed=byId(added[0]);if(Math.abs(Number(val(placed,'start_time'))-req.destinationBeat)>0.00001||Math.abs(Number(val(placed,'end_time'))-req.destinationBeat-req.length)>0.00001)throw new Error('Arrangement position or length verification failed');verifyNotes(placed);done(placed);});
+  });
+ });
+}
+
 function anything() {
  if(messagename!=='/codex')return;
  var req;try {req=JSON.parse(String(arrayfromargs(arguments)[0]));if(req.token!==TOKEN)return;refreshUI(req.op);if(!ready)throw new Error('Live device is initializing');
  if(req.expectedSession && req.expectedSession!==SESSION)throw new Error('Live connection changed; read again');
  if(cache[req.id]){reply(req.id,cache[req.id]);return;}
  var result;
- if(req.op==='status'){var t=host(),song=api('live_set');result={hostTrackId:Number(t.id),hostTrackName:val(t,'name'),tempo:val(song,'tempo'),playing:val(song,'is_playing'),bridge:'0.4.0',scope:'project',session:SESSION,currentBeat:val(song,'current_song_time'),signatureNumerator:val(song,'signature_numerator'),signatureDenominator:val(song,'signature_denominator'),loop:val(song,'loop'),loopStart:val(song,'loop_start'),loopLength:val(song,'loop_length'),canUndo:val(song,'can_undo'),canRedo:val(song,'can_redo')};}
+ if(req.op==='status'){var t=host(),song=api('live_set');result={hostTrackId:Number(t.id),hostTrackName:val(t,'name'),tempo:val(song,'tempo'),playing:val(song,'is_playing'),bridge:'0.5.0',scope:'project',session:SESSION,currentBeat:val(song,'current_song_time'),signatureNumerator:val(song,'signature_numerator'),signatureDenominator:val(song,'signature_denominator'),loop:val(song,'loop'),loopStart:val(song,'loop_start'),loopLength:val(song,'loop_length'),canUndo:val(song,'can_undo'),canRedo:val(song,'can_redo')};}
  else if(req.op==='transport'){
   var song=api('live_set');
   if(req.action==='seek'){song.set('current_song_time',finiteBeat(req.beat));}
@@ -90,6 +135,7 @@ function anything() {
   c.call('apply_note_modifications',JSON.stringify({notes:updated}));
   var verify=new Task(function(){try{var after=notes(c);if(fingerprint(after)!==fingerprint(expected))throw new Error('Read-back verification failed; inspect before further editing');var rr={clip:clipInfo(c),changedNoteCount:updated.length,verified:true,beforeFingerprint:fingerprint(before),afterFingerprint:fingerprint(after)};cache[req.id]=rr;reply(req.id,rr);}catch(e){reply(req.id,null,String(e));}},this);tasks.push(verify);verify.schedule(200);return;
  }
+ else if(req.op==='create_clip'){createMidiClip(req);return;}
  else if(req.op==='variation'){
  if(Number(val(api('live_set'),'is_playing')))throw new Error('Stop playback before editing');
   var c=checkClip(req.clipId),ns=notes(c),info=clipInfo(c),start=Number(info.loopStart),end=Number(info.loopEnd);if(!(end>start&&end-start<=256))throw new Error('Unsupported loop length');

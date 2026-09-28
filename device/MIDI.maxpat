@@ -180,7 +180,7 @@
             92,
             17
           ],
-          "text": "v0.4 / ALL",
+          "text": "v0.5 / ALL",
           "textcolor": [
             0.46,
             0.43,
@@ -1155,7 +1155,7 @@
                     748,
                     61
                   ],
-                  "text": "Codex / Antigravity の ableton_live を再接続し、19 ツールを確認します。\nlive_browser_status で接続確認 → live_search_plugins で L2 を検索。\n例：「Kick と Sn の末尾に Waves L2 Stereo を挿して。既にあればスキップして」",
+                  "text": "Codex / Antigravity の ableton_live を再接続し、20 ツールを確認します。\nlive_browser_status で接続確認 → live_search_plugins で L2 を検索。\n例：「Kick と Sn の末尾に Waves L2 Stereo を挿して。既にあればスキップして」",
                   "textcolor": [
                     0.44,
                     0.41,

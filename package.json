@@ -1,8 +1,13 @@
 {
   "name": "live-bridge",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "description": "Max for Live and Remote Script bridge for MCP clients",
-  "scripts": {"build": "node scripts/build.cjs", "test": "node --test test/*.test.cjs"},
-  "engines": {"node": ">=20"}
+  "scripts": {
+    "build": "node scripts/build.cjs",
+    "test": "node --test test/*.test.cjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
 }
