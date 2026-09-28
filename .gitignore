@@ -1,0 +1,17 @@
+node_modules/
+dist/
+bridge-config.json
+config.json
+*.amxd
+*.als
+*.alp
+*.log
+*.lock
+*.backup-*
+edit-history/
+device-history/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
