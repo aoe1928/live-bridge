@@ -1,0 +1,11 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os');
+const {unpack}=require('../scripts/frozen-device.cjs');const {setup}=require('../scripts/setup.cjs');
+test('one-step setup installs self-contained devices and preserves unrelated client settings',()=>{
+ const temp=fs.mkdtempSync(path.join(os.tmpdir(),'live-bridge-install-')),out=path.join(temp,'dist'),home=path.join(temp,'home'),library=path.join(temp,'User Library');fs.mkdirSync(library);fs.mkdirSync(path.join(home,'.codex'),{recursive:true});fs.mkdirSync(path.join(home,'.gemini/config'),{recursive:true});fs.writeFileSync(path.join(home,'.codex/config.toml'),'model = "test"\n[mcp_servers.other]\ncommand = "other"\n');fs.writeFileSync(path.join(home,'.gemini/config/mcp_config.json'),JSON.stringify({mcpServers:{other:{command:'other'}}}));
+ try{
+ setup({out,home,userLibrary:library,configureClients:true});
+ const token=JSON.parse(fs.readFileSync(path.join(out,'bridge-config.json'))).token;
+ for(const [kind,folder] of [['Audio','Audio Effects/Max Audio Effect'],['MIDI','MIDI Effects/Max MIDI Effect']]){const file=path.join(library,'Presets',folder,'Live Bridge','Live Bridge '+kind+'.amxd');const entries=unpack(fs.readFileSync(file));assert.equal(entries.length,3);assert(entries.find(x=>x.name==='live-api.js').data.equals(fs.readFileSync(path.join(out,'live-api.js'))));assert(entries.find(x=>x.name==='bridge-mascot.png').data.equals(fs.readFileSync(path.join(out,'bridge-mascot.png'))));assert(entries[0].data.toString().includes('v0.6 / ALL'));assert.deepEqual(fs.readdirSync(path.dirname(file)),['Live Bridge '+kind+'.amxd']);}
+ setup({out,home,userLibrary:library,configureClients:true});assert.equal(JSON.parse(fs.readFileSync(path.join(out,'bridge-config.json'))).token,token);const c=fs.readFileSync(path.join(home,'.codex/config.toml'),'utf8');assert.equal(c.match(/\[mcp_servers\.ableton_live\]/g).length,1);assert(c.includes('[mcp_servers.other]'));assert(JSON.parse(fs.readFileSync(path.join(home,'.gemini/config/mcp_config.json'))).mcpServers.other);assert.equal(JSON.parse(fs.readFileSync(path.join(library,'Remote Scripts/LiveBridgeBrowser/config.json'))).token,token);
+ }finally{fs.rmSync(temp,{recursive:true,force:true});}
+});

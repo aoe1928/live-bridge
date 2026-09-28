@@ -4,7 +4,7 @@ Ableton LiveをCodex / AntigravityなどのMCPクライアントから操作す�
 
 ![Live Bridge mascot](assets/bridge-mascot.png)
 
-MCPサーバー v0.6 / Maxデバイス v0.5。Windows・Live 11.3.43で既存実装を検証しています。このリポジトリの生成版デバイスは構造検証済みですが、Liveへの読み込みは別途確認が必要です。
+MCPサーバー・Maxデバイスともv0.6。JSと画像は.amxdへ同梱されます。Windows・Live 11.3.43で生成したAudio版の読み込み・v0.6応答を確認済みです。新しいクリップ作成機能の実機試験は別途必要です。
 
 ## できること
 
@@ -16,35 +16,32 @@ MCPサーバー v0.6 / Maxデバイス v0.5。Windows・Live 11.3.43で既存実
 
 ## セットアップ
 
-Node.js 20以上、Max for Liveを利用できるLive環境が必要です。L2を使う場合はWaves L2のインストールとライセンスも必要です。製品本体は含みません。
+Node.js 20以上とMax for Liveを利用できるLive環境が必要です。L2を使う場合はWaves L2のインストールとライセンスも必要です。
+
+リポジトリを取得したら、Liveの環境設定にあるユーザーライブラリの場所を指定して実行します。
 
 ```sh
 git clone https://github.com/aoe1928/live-bridge.git
 cd live-bridge
-npm run build
-npm test
+npm run setup -- --user-library "C:/path/to/Ableton/User Library" --configure-clients
 ```
 
-追加のnpm依存パッケージはありません。`dist`にPC専用のトークンと実行ファイルが生成されます。再ビルドは既存のトークンを維持します。
+セットアップは次をまとめて行います。
 
-1. `dist/Live Bridge MIDI.amxd`を音源より前、または`dist/Live Bridge Audio.amxd`を音源より後・オーディオ・リターン・マスターに挿します。Set内に1個だけ配置してください。
-2. 生成版はFreezeしていません。`.amxd`、`live-api.js`、`bridge-mascot.png`を同じフォルダーに保ちます。単一ファイルで使う場合はMaxで依存ファイルを確認してFreezeしてください。生成物にはトークンが含まれるため公開しないでください。
-3. デバイスのSETUPから接続プロンプトをAIへ渡すか、以下のSTDIO MCPを登録します。実際の絶対パスに置き換えてください。
+1. PC専用トークンとMCPサーバーをdistへ生成。更新時はトークンを維持。
+2. **JS・画像を内蔵した.amxd**を生成し、ユーザーライブラリのMax Audio Effect / Max MIDI Effectへ配置。
+3. LiveBridgeBrowserをユーザーライブラリのRemote Scriptsへ配置。
+4. Codex / Antigravityのableton_liveを同じdist/server.cjsへ設定。既存設定はバックアップし、他のMCP登録を維持。
 
-```json
-{
-  "mcpServers": {
-    "ableton_live": {
-      "command": "/absolute/path/to/node",
-      "args": ["/absolute/path/to/live-bridge/dist/server.cjs"]
-    }
-  }
-}
-```
+その後、初回だけLiveを再起動し、環境設定 → Link/Tempo/MIDIの空きコントロールサーフェス欄で **LiveBridgeBrowser** を選択します。**入力・出力はNone**、KeyLabなど既存設定は維持します。AI側のMCPも再接続してください。
 
-4. MCPを再接続し、`live_status`と`live_list_tracks`で確認します。L2挿入を使う場合は[ブラウザー連携](docs/ブラウザー連携.md)も設定します。
+あとはLiveのブラウザーから **Live Bridge Audio** をマスター等へ、または **Live Bridge MIDI** を音源の前へ配置します。Set内にどちらか1個だけ置きます。**デバイスの隣にJSや画像を置く必要はありません。**
 
-WindowsではJSON内のパスを`C:/...`形式にすると記述しやすくなります。SETUPはプロンプトを表示するだけで、設定を自動変更しません。現在の会話でツールが更新されない場合はクライアント側の再接続が必要です。
+AIとの接続にはPC側のMCPサーバーが必要なので、distフォルダーは保持してください。.amxdだけではAI側のサーバーを置き換えられません。デバイスにはPC専用トークンが含まれるため、生成物を公開配布しないでください。別PCではセットアップを実行して対応する組を生成します。
+
+既存設定を自動変更したくない場合は --configure-clients を省略します。dist/mcp-settings.jsonとデバイスのSETUPプロンプトを使って登録できます。生成だけ行う場合は npm run build、検証は npm test です。追加のnpm依存パッケージはありません。
+
+更新時も同じセットアップを再実行してデバイスを読み込み直します。Remote Scriptを更新した場合はLiveを再起動します。登録・制限の詳細は[ブラウザー連携](docs/ブラウザー連携.md)を参照してください。
 
 ## 新しいMIDIクリップの作成
 

@@ -41,7 +41,7 @@
 
 ## 更新
 
-`npm run build`で両方の.amxdと対応するlive-api.jsを生成します。生成版はFreezeされていないため、同じdistフォルダー内のJSと画像を維持してください。Liveでデバイスを読み込み直し、MCPも更新したdist/server.cjsへ接続し直します。既存環境のbridge-config.jsonをdistへコピーしてからビルドするとトークンを維持できます。新規生成トークンを使う場合、Remote Scriptも再インストールが必要です。
+`npm run build`で両方の.amxdと対応するlive-api.jsを生成します。生成版にはJSと画像が同梱されています。デバイスは.amxdだけで配置できます。MCPサーバー用のdistは保持してください。Liveでデバイスを読み込み直し、MCPも更新したdist/server.cjsへ接続し直します。既存環境のbridge-config.jsonをdistへコピーしてからビルドするとトークンを維持できます。新規生成トークンを使う場合、Remote Scriptも再インストールが必要です。
 
 API参照：[ClipSlot](https://docs.cycling74.com/apiref/lom/clipslot/)、[Clip.add_new_notes](https://docs.cycling74.com/apiref/lom/clip/#add_new_notes)、[Track.duplicate_clip_to_arrangement](https://docs.cycling74.com/apiref/lom/track/#duplicate_clip_to_arrangement)。
 

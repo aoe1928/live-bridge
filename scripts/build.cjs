@@ -1,5 +1,6 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const root=path.resolve(__dirname,'..');
+const {pack}=require('./frozen-device.cjs');
 function build(out=path.join(root,'dist')){
  fs.mkdirSync(out,{recursive:true});const cfgPath=path.join(out,'bridge-config.json');
  const cfg=fs.existsSync(cfgPath)?JSON.parse(fs.readFileSync(cfgPath,'utf8')):{token:crypto.randomBytes(32).toString('hex'),requestPort:17831,responsePort:17832};
@@ -15,7 +16,7 @@ function build(out=path.join(root,'dist')){
  const doc=JSON.parse(fs.readFileSync(path.join(root,'device',kind+'.maxpat'),'utf8'));
  function visit(v){if(Array.isArray(v))return v.map(visit);if(v&&typeof v==='object'){for(const k of Object.keys(v))v[k]=visit(v[k]);return v;}return typeof v==='string'?v.replaceAll('__SETUP_PROMPT__',prompt).replaceAll('__LIVE_BRIDGE_TOKEN__',cfg.token):v;}
  const body=Buffer.from(JSON.stringify(visit(doc),null,2)+'\0');const header=Buffer.from(JSON.parse(fs.readFileSync(path.join(root,'device',kind+'.header.json'))).base64,'base64');header.writeUInt32LE(body.length,28);
- fs.writeFileSync(path.join(out,'Live Bridge '+kind+'.amxd'),Buffer.concat([header,body]));
+ fs.writeFileSync(path.join(out,'Live Bridge '+kind+'.amxd'),pack(header,[{name:'Live Bridge '+kind+'.amxd',type:'JSON',data:body},{name:'live-api.js',type:'TEXT',data:fs.readFileSync(path.join(out,'live-api.js'))},{name:'bridge-mascot.png',type:'PNG ',data:fs.readFileSync(path.join(out,'bridge-mascot.png'))}]));
  }
  fs.copyFileSync(path.join(root,'docs/ブラウザー連携.md'),path.join(out,'ブラウザー連携.md'));
  return {out,deviceCount:2};

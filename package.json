@@ -5,7 +5,8 @@
   "description": "Max for Live and Remote Script bridge for MCP clients",
   "scripts": {
     "build": "node scripts/build.cjs",
-    "test": "node --test test/*.test.cjs"
+    "test": "node --test test/*.test.cjs",
+    "setup": "node scripts/setup.cjs"
   },
   "engines": {
     "node": ">=20"
