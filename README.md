@@ -1,40 +1,47 @@
 # Live Bridge
 
-Ableton LiveをCodex / AntigravityなどのMCPクライアントから操作するための、Max for LiveデバイスとRemote Scriptです。
+**English** | [日本語](README.ja.md)
+
+Control Ableton Live from MCP clients such as Codex and Antigravity using a Max for Live device and an optional Remote Script.
 
 ![Live Bridge mascot](assets/bridge-mascot.png)
 
-MCPサーバー・Maxデバイスともv0.10。JSと画像は.amxdへ同梱されます。Windows・Live 11で並び替えショートカットを確認済み。Macはキー定義・共通ロジックの自動テストのみで、実機未検証です。トラック名・色・新しいクリップ作成の書き込み確認は自動テストのみです。
+The MCP server and Max devices are **v0.10**, with **48 MCP tools**. JavaScript and the mascot image are bundled inside each `.amxd`. The browser Remote Script is **v0.2.0**.
 
-## v0.10の追加機能
+Windows / Live 11 track-reordering shortcuts have been verified in Live. macOS has only automated coverage for key definitions and shared logic; it has not been tested on a Mac. Track appearance, new clip creation, and the production tools added in v0.10 have automated tests but have not been verified in Live.
 
-L2限定を解除し、プラグイン挿入・一括ミキサー／名前／色設定・入出力ルーティング・トラック複製／削除・MIDI編集拡張・クリップ設定・シーン／ロケーター管理・ミックス保存／比較／復元に対応。MCPは48ツール、Remote Scriptは0.2.0です。[8項目の使い方と実装範囲](docs/production.md)。新機能のLive実機・Mac実機での検証は未実施です。
+## What's new in v0.10
 
-## v0.9の追加機能
+- Plugin insertion without an L2-only product allowlist.
+- Batch mixer, track name, and color changes.
+- Input/output routing.
+- Track duplication and deletion.
+- MIDI note attribute updates, additions, and deletions.
+- Clip names, colors, loop boundaries, and markers.
+- Scene and Arrangement locator management.
+- Mix snapshot saving, comparison, and restoration, including Live-exposed plugin parameters.
 
-live_create_trackでMIDI・オーディオ・リターントラックを末尾へ新規作成できます。停止・録音状態、Setの接続と作成前後のトラック順序を照合し、新しいトラックIDを返します。画面操作やRemote Scriptは不要です。[使用手順](docs/create-track.md)・[今後の追加候補](docs/roadmap.md)。MCPは27ツールです。新機能は自動テスト済みで、Live実機での作成確認は未実施です。
+See the [production tool guide and supported scope (Japanese)](docs/production.md). These additions have not yet been verified in Live or on macOS.
 
-## v0.8の追加機能
+## Earlier additions
 
-Windows（Ctrl）／Mac（Command）に対応した[トラック並び替えワークフロー](docs/track-reorder.md)を追加。MCPで順序を取得・準備し、**同じPCの画面操作ができるAI**が1回キー操作した後、MCPで全トラックの順序と所属を検証します。MCPサーバー単体ではキーを送信しません。通常の名前・色・MIDI編集などは引き続き画面操作不要です。
+- **v0.9:** `live_create_track` appends an empty MIDI, audio, or Return track and returns its verified ID. It checks playback/recording, the bridge session, and track order before and after creation. No desktop control or Remote Script is required. This release had 27 tools. [Track creation (Japanese)](docs/create-track.md) · [Roadmap (Japanese)](docs/roadmap.md).
+- **v0.8:** A [track-reordering workflow (Japanese)](docs/track-reorder.md) for Windows (Ctrl) and Mac (Command). MCP reads and prepares the order, a desktop-capable agent on the same computer sends one key action, and MCP verifies the resulting order and group membership. The MCP server itself does not send keys. Other normal editing operations do not require desktop control.
+- **v0.7:** Track renaming and palette-based color changes. These do not recolor existing clips or reorder tracks. [Usage and checks (Japanese)](docs/track-appearance.md).
 
-## v0.7の追加機能
+## Features
 
-トラック名変更・パレットによる色変更を追加しました。[使用例と安全チェック](docs/track-appearance.md)。既存クリップの色やトラックの並び順は変更しません。
+- Read tracks, clips, and MIDI notes; edit note pitches with conditional restoration.
+- Play, stop, preview a bounded section, and change the current tempo or time signature.
+- Control volume, pan, sends, mute, solo, and device parameters exposed to Live.
+- Search installed plugins and append compatible audio effects through the Remote Script, without a product-name allowlist.
+- Use the device's SETUP and HELP buttons. One MIDI or Audio bridge controls the entire Set.
 
-## できること
+## Setup
 
-- トラック・クリップ・MIDIノートの読み取り、ノートのピッチ変更と条件付き復元
-- 再生・停止、区間試聴、テンポ・拍子の現在値変更
-- 音量・パン・センド、ミュート・ソロ、Liveに公開されたデバイスパラメーターの操作
-- Remote Scriptによるプラグイン検索、製品名の制限なしで音声エフェクトを末尾挿入
-- デバイス内のSETUP・HELP。MIDI版とAudio版のどちらか1個でSet全体を操作
+You need **Node.js 20 or later** and an Ableton Live installation with Max for Live. Plugins you want to load must already be installed and appropriately licensed.
 
-## セットアップ
-
-Node.js 20以上とMax for Liveを利用できるLive環境が必要です。L2を使う場合はWaves L2のインストールとライセンスも必要です。
-
-リポジトリを取得したら、Liveの環境設定にあるユーザーライブラリの場所を指定して実行します。
+Clone the repository, then use the User Library location shown in Live's preferences:
 
 ```sh
 git clone https://github.com/aoe1928/live-bridge.git
@@ -42,50 +49,60 @@ cd live-bridge
 npm run setup -- --user-library "C:/path/to/Ableton/User Library" --configure-clients
 ```
 
-セットアップは次をまとめて行います。
+Replace the example with your actual absolute User Library path, including on macOS.
 
-1. PC専用トークンとMCPサーバーをdistへ生成。更新時はトークンを維持。
-2. **JS・画像を内蔵した.amxd**を生成し、ユーザーライブラリのMax Audio Effect / Max MIDI Effectへ配置。
-3. LiveBridgeBrowserをユーザーライブラリのRemote Scriptsへ配置。
-4. Codex / Antigravityのableton_liveを同じdist/server.cjsへ設定。既存設定はバックアップし、他のMCP登録を維持。
+Setup performs the following steps:
 
-その後、初回だけLiveを再起動し、環境設定 → Link/Tempo/MIDIの空きコントロールサーフェス欄で **LiveBridgeBrowser** を選択します。**入力・出力はNone**、KeyLabなど既存設定は維持します。AI側のMCPも再接続してください。
+1. Generates a machine-specific token and MCP server files in `dist`, preserving the token on updates.
+2. Builds **self-contained `.amxd` devices with JavaScript and the image included**, and installs them in the User Library's Max Audio Effect / Max MIDI Effect folders.
+3. Installs `LiveBridgeBrowser` in the User Library's Remote Scripts folder.
+4. Configures the `ableton_live` MCP entry in Codex / Antigravity to use the same `dist/server.cjs`. Existing settings are backed up, and unrelated MCP entries are preserved.
 
-あとはLiveのブラウザーから **Live Bridge Audio** をマスター等へ、または **Live Bridge MIDI** を音源の前へ配置します。Set内にどちらか1個だけ置きます。**デバイスの隣にJSや画像を置く必要はありません。**
+After the initial installation, restart Live and select **LiveBridgeBrowser** in an unused Control Surface slot under **Preferences → Link/Tempo/MIDI**. Set **Input and Output to None**, and preserve existing controller entries such as KeyLab. Reconnect MCP in your AI client.
 
-AIとの接続にはPC側のMCPサーバーが必要なので、distフォルダーは保持してください。.amxdだけではAI側のサーバーを置き換えられません。デバイスにはPC専用トークンが含まれるため、生成物を公開配布しないでください。別PCではセットアップを実行して対応する組を生成します。
+From Live's browser, place **Live Bridge Audio** on the Master or another compatible track, or **Live Bridge MIDI** before an instrument. Keep **exactly one bridge device in each Set**. You do not need to place JavaScript or image files beside the device.
 
-既存設定を自動変更したくない場合は --configure-clients を省略します。dist/mcp-settings.jsonとデバイスのSETUPプロンプトを使って登録できます。生成だけ行う場合は npm run build、検証は npm test です。追加のnpm依存パッケージはありません。
+Keep the `dist` folder: the AI client still needs the local MCP server. The `.amxd` alone does not replace that server. Generated devices contain a machine-specific token and should not be publicly redistributed. Run setup on each additional computer to generate a matching device/server pair.
 
-更新時も同じセットアップを再実行してデバイスを読み込み直します。Remote Scriptを更新した場合はLiveを再起動します。登録・制限の詳細は[ブラウザー連携](docs/ブラウザー連携.md)を参照してください。
+To configure clients manually, omit `--configure-clients` and use `dist/mcp-settings.json` or the device's SETUP prompt. `npm run build` generates files without installing them; `npm test` runs the JavaScript tests. There are no additional npm dependencies.
 
-## 新しいMIDIクリップの作成
+For updates, run setup again and reload the device in Live. Restart Live whenever the Remote Script changes. See [browser integration and registration (Japanese)](docs/ブラウザー連携.md).
 
-live_create_clipでノート配列からSessionクリップを作成し、任意の拍位置にArrangementへ配置できます。[引数・例・制限](docs/create-clip.md)を参照してください。
+## Create MIDI clips
 
-## 構成
+`live_create_clip` creates a Session clip from a note array and can copy it to a specified Arrangement beat position. See [arguments, examples, and limitations (Japanese)](docs/create-clip.md).
+
+## Architecture
 
 ```text
-MCPクライアント → STDIO MCPサーバー
-                  ├ UDP/OSC → Max for Live → MIDI・ミキサー・曲設定
-                  └ UDP     → Remote Script → プラグイン検索・挿入
+MCP client → STDIO MCP server
+              ├ UDP/OSC → Max for Live → MIDI, mixer, and song settings
+              └ UDP     → Remote Script → plugin search and insertion
 ```
 
-Max側は17831/17832、Remote Scriptは127.0.0.1:17833を使います。ルーターのポート開放は不要です。Max側の受信はloopback専用ではありません。共有トークンによる認証を行いますが暗号化通信ではないため、外部ネットワークへ公開しないでください。
+The Max bridge uses ports 17831/17832, and the Remote Script listens on `127.0.0.1:17833`. Router port forwarding is unnecessary. The Max receiver is not restricted to loopback. Requests use a shared token but are not encrypted; do not expose the bridge to external networks.
 
-## 制限
+## Limitations
 
-- Live 1台・Set内のMaxデバイス1個を前提とします。複数クライアントは同じサーバーフォルダーを使用し、変更を順番に実行します。
-- 値の変更とプラグイン挿入は停止中のみ。セッションや変更前の値・チェーンを照合します。
-- パラメーターの値はAPIの単位です。音量0〜1をdBとみなさないでください。
-- プラグインの内部UIや非公開パラメーターは操作できません。MIDIループのノート変更は繰り返し全体に反映されます。
-- 空のMIDIへの音源挿入、Rack内部への挿入、Set自動保存、プラグイン挿入の自動復元は未対応です。
-- Remote ScriptはLiveのバージョンに依存します。Antigravityアプリ内での認識は未検証です。
+- One Live instance and one bridge device per Set. Multiple clients must share the same server folder so writes are serialized.
+- Value changes and plugin insertion require stopped playback. Session identities and previous values or device chains are checked before editing.
+- Parameter values use native API units. A volume value between 0 and 1 is not a dB value.
+- Plugin-internal UI and unexposed parameters are not accessible through these tools. Editing a note in a MIDI loop affects every repetition.
+- Instrument insertion on empty MIDI tracks, insertion inside Racks, automatic Set saving, and automatic reversal of plugin insertion are not supported.
+- Remote Script behavior depends on the Live version. Recognition inside the Antigravity application has not been verified.
 
-## 開発と公開物
+## Development and distribution
 
-`src`が実装、`device`が編集可能なMaxパッチ、`scripts/build.cjs`がローカル生成処理です。変更後はビルドし直してLiveでデバイスを再読み込みします。Remote Script更新後は再インストールとLive再起動が必要です。
+`src` contains the implementation, `device` contains editable Max patches, and `scripts/build.cjs` generates local artifacts. Rebuild and reload the device after implementation changes. Reinstall the Remote Script and restart Live after changes to that script.
 
-設定、トークン、生成した.amxd、Live Set、作業履歴はGitに含めません。実機試験ではトラック末尾へのL2挿入・既存チェーン維持・重複拒否・MIDI編集結果の維持を確認しました。CIはLiveを起動せず、生成物・MCP定義・模擬Live APIでの書き込み、競合、途中失敗を検証します。Pythonテストは python -m unittest discover -s test -p "test_*.py" で実行できます。
+Settings, tokens, generated `.amxd` devices, Live Sets, and operation histories are excluded from Git. Earlier Live tests covered appending L2, preserving the existing chain and MIDI edits, and the duplicate rejection implemented at that time. v0.10 permits multiple instances of the same product.
 
-現時点では再利用ライセンスを設定していません。キャラクター画像を含め、公開されていること自体は再配布許諾を意味しません。
+CI does not launch Live. It checks generated files, MCP schemas, and writes, conflicts, and partial failures against simulated Live APIs. Run Python tests with:
+
+```sh
+python -m unittest discover -s test -p "test_*.py"
+```
+
+Keep this English README and [README.ja.md](README.ja.md) synchronized when changing features, setup, limitations, or verification status.
+
+No reuse license has been assigned yet. Public availability does not itself grant redistribution rights, including rights to the character artwork.
