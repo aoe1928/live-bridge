@@ -98,13 +98,25 @@ function editTrackAppearance(req) {
  }catch(e){reply(req.id,null,String(e));}},this);tasks.push(task);task.schedule(150);
 }
 
+function trackOrderSnapshot(){
+ var song=api('live_set'),normal=ids(song,'tracks'),rows=[],selected=[];
+ for(var i=0;i<normal.length;i++){
+  var t=byId(normal[i]),parent=ids(t,'group_track'),group=Number(val(t,'is_foldable'));
+  rows.push({id:Number(t.id),name:String(val(t,'name')),parentId:parent.length?parent[0]:0,isGroup:group,frozen:Number(val(t,'is_frozen'))});
+  if(Number(val(t,'is_part_of_selection')))selected.push(Number(t.id));
+ }
+ var visible=api('live_app view').call('is_view_visible','Arranger');if(visible instanceof Array)visible=visible[0];
+ var current=ids(api('live_set view'),'selected_track');
+ return {session:SESSION,playing:Number(val(song,'is_playing')),recording:Number(val(song,'record_mode'))||Number(val(song,'session_record')),tracks:rows,selectedTrackId:current[0]||0,selectedTrackIds:selected,arrangementVisible:Number(visible)};
+}
 function anything() {
  if(messagename!=='/codex')return;
  var req;try {req=JSON.parse(String(arrayfromargs(arguments)[0]));if(req.token!==TOKEN)return;refreshUI(req.op);if(!ready)throw new Error('Live device is initializing');
  if(req.expectedSession && req.expectedSession!==SESSION)throw new Error('Live connection changed; read again');
  if(cache[req.id]){reply(req.id,cache[req.id]);return;}
  var result;
- if(req.op==='status'){var t=host(),song=api('live_set');result={hostTrackId:Number(t.id),hostTrackName:val(t,'name'),tempo:val(song,'tempo'),playing:val(song,'is_playing'),bridge:'0.7.0',scope:'project',session:SESSION,currentBeat:val(song,'current_song_time'),signatureNumerator:val(song,'signature_numerator'),signatureDenominator:val(song,'signature_denominator'),loop:val(song,'loop'),loopStart:val(song,'loop_start'),loopLength:val(song,'loop_length'),canUndo:val(song,'can_undo'),canRedo:val(song,'can_redo')};}
+ if(req.op==='status'){var t=host(),song=api('live_set');result={hostTrackId:Number(t.id),hostTrackName:val(t,'name'),tempo:val(song,'tempo'),playing:val(song,'is_playing'),bridge:'0.8.0',scope:'project',session:SESSION,currentBeat:val(song,'current_song_time'),signatureNumerator:val(song,'signature_numerator'),signatureDenominator:val(song,'signature_denominator'),loop:val(song,'loop'),loopStart:val(song,'loop_start'),loopLength:val(song,'loop_length'),canUndo:val(song,'can_undo'),canRedo:val(song,'can_redo')};}
+ else if(req.op==='track_order'){result=trackOrderSnapshot();}
  else if(req.op==='transport'){
   var song=api('live_set');
   if(req.action==='seek'){song.set('current_song_time',finiteBeat(req.beat));}

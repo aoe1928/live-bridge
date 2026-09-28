@@ -17,3 +17,5 @@ __pycache__/
 !.env.example
 
 track-history/
+
+move-history/

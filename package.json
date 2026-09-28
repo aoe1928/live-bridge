@@ -1,6 +1,6 @@
 {
   "name": "live-bridge",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "description": "Max for Live and Remote Script bridge for MCP clients",
   "scripts": {
