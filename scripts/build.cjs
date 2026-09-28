@@ -10,7 +10,7 @@ function build(out=path.join(root,'dist')){
  fs.cpSync(path.join(root,'src/remote-script'),path.join(out,'remote-script'),{recursive:true});
  fs.copyFileSync(path.join(root,'assets/bridge-mascot.png'),path.join(out,'bridge-mascot.png'));
  fs.writeFileSync(path.join(out,'live-api.js'),fs.readFileSync(path.join(root,'src/live-api.js'),'utf8').replaceAll('__LIVE_BRIDGE_TOKEN__',cfg.token));
- const prompt=`Live BridgeをこのAIアプリから使えるようにMCP接続を設定してください。\nNode.js: ${process.execPath}\nMCPサーバー: ${path.join(out,'server.cjs')}\nSTDIO方式で、commandにNode.js、argsにサーバーの絶対パスを指定します。\n既存のableton_live登録が同じ場所なら再利用し、他のMCP設定は維持してください。\nMCPを再接続し、20ツール、live_status、live_list_tracksの応答を確認してください。\nL2挿入にはRemote Scriptも必要です。ブラウザー連携.mdに従い、live_browser_statusとlive_search_plugins（query: L2）で確認してください。\nトークンは表示・変更しないでください。今回は接続確認のみで、編集・再生・保存は行いません。`;
+ const prompt=`Live BridgeをこのAIアプリから使えるようにMCP接続を設定してください。\nNode.js: ${process.execPath}\nMCPサーバー: ${path.join(out,'server.cjs')}\nSTDIO方式で、commandにNode.js、argsにサーバーの絶対パスを指定します。\n既存のableton_live登録が同じ場所なら再利用し、他のMCP設定は維持してください。\nMCPを再接続し、22ツール、live_status、live_list_tracksの応答を確認してください。\nL2挿入にはRemote Scriptも必要です。ブラウザー連携.mdに従い、live_browser_statusとlive_search_plugins（query: L2）で確認してください。\nトークンは表示・変更しないでください。今回は接続確認のみで、編集・再生・保存は行いません。`;
  fs.writeFileSync(path.join(out,'接続セットアップ用プロンプト.txt'),prompt+'\n');
  for(const kind of ['MIDI','Audio']){
  const doc=JSON.parse(fs.readFileSync(path.join(root,'device',kind+'.maxpat'),'utf8'));

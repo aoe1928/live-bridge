@@ -75,13 +75,36 @@ function createMidiClip(req) {
  });
 }
 
+function editTrackAppearance(req) {
+ assertWrite(req);
+ var song=api('live_set');if(Number(val(song,'record_mode'))||Number(val(song,'session_record')))throw new Error('Disable recording before editing tracks');
+ if(typeof req.trackId!=='number'||req.trackId<1||req.trackId!==Math.floor(req.trackId))throw new Error('Invalid trackId');
+ var t=track(req.trackId),key,value,expected;
+ if(req.op==='rename_track'){
+  key='name';value=req.name;expected=req.expectedName;
+  if(typeof value!=='string'||value.length<1||value.length>128||!value.replace(/\s/g,'').length||/[\x00-\x1f\x7f]/.test(value))throw new Error('Name must be 1..128 characters, without control characters');
+  if(typeof expected!=='string')throw new Error('expectedName required');
+ }else{
+  key='color_index';value=req.colorIndex;expected=req.expectedColorIndex;
+  if(typeof value!=='number'||value!==Math.floor(value)||value<0||value>69)throw new Error('colorIndex must be an integer 0..69');
+  if(typeof expected!=='number'||expected!==Math.floor(expected)||expected<0||expected>69)throw new Error('Invalid expectedColorIndex');
+ }
+ var before=val(t,key);if(before!==expected)throw new Error('Track value changed; read tracks again');
+ t.set(key,value);
+ var task=new Task(function(){try{
+  if(req.expectedSession!==SESSION)throw new Error('Session changed during edit');
+  var current=track(req.trackId),after=val(current,key);if(after!==value)throw new Error('Read-back differs; inspect current track');
+  var result={session:SESSION,trackId:Number(current.id),property:key,before:before,after:after,name:val(current,'name'),color:Number(val(current,'color')),colorIndex:Number(val(current,'color_index')),verified:true};cache[req.id]=result;reply(req.id,result);
+ }catch(e){reply(req.id,null,String(e));}},this);tasks.push(task);task.schedule(150);
+}
+
 function anything() {
  if(messagename!=='/codex')return;
  var req;try {req=JSON.parse(String(arrayfromargs(arguments)[0]));if(req.token!==TOKEN)return;refreshUI(req.op);if(!ready)throw new Error('Live device is initializing');
  if(req.expectedSession && req.expectedSession!==SESSION)throw new Error('Live connection changed; read again');
  if(cache[req.id]){reply(req.id,cache[req.id]);return;}
  var result;
- if(req.op==='status'){var t=host(),song=api('live_set');result={hostTrackId:Number(t.id),hostTrackName:val(t,'name'),tempo:val(song,'tempo'),playing:val(song,'is_playing'),bridge:'0.6.0',scope:'project',session:SESSION,currentBeat:val(song,'current_song_time'),signatureNumerator:val(song,'signature_numerator'),signatureDenominator:val(song,'signature_denominator'),loop:val(song,'loop'),loopStart:val(song,'loop_start'),loopLength:val(song,'loop_length'),canUndo:val(song,'can_undo'),canRedo:val(song,'can_redo')};}
+ if(req.op==='status'){var t=host(),song=api('live_set');result={hostTrackId:Number(t.id),hostTrackName:val(t,'name'),tempo:val(song,'tempo'),playing:val(song,'is_playing'),bridge:'0.7.0',scope:'project',session:SESSION,currentBeat:val(song,'current_song_time'),signatureNumerator:val(song,'signature_numerator'),signatureDenominator:val(song,'signature_denominator'),loop:val(song,'loop'),loopStart:val(song,'loop_start'),loopLength:val(song,'loop_length'),canUndo:val(song,'can_undo'),canRedo:val(song,'can_redo')};}
  else if(req.op==='transport'){
   var song=api('live_set');
   if(req.action==='seek'){song.set('current_song_time',finiteBeat(req.beat));}
@@ -116,11 +139,12 @@ function anything() {
    result.clips.push({clip:info,fingerprint:fingerprint(ns),events:events,warning:info.looping?'Editing a note affects every repetition of this clip; split or copy before editing one occurrence.':null});
   }
  }
- else if(req.op==='tracks'){var list=allTracks(),returns=ids(api('live_set'),'return_tracks'),master=ids(api('live_set'),'master_track')[0];result=[];for(var i=0;i<list.length;i++){var t=byId(list[i]);result.push({id:Number(t.id),name:val(t,'name'),kind:list[i]===master?'master':returns.indexOf(list[i])>=0?'return':'track',devices:devicesIn(t,[],0)});}}
+ else if(req.op==='tracks'){var list=allTracks(),returns=ids(api('live_set'),'return_tracks'),master=ids(api('live_set'),'master_track')[0];result=[];for(var i=0;i<list.length;i++){var t=byId(list[i]);result.push({id:Number(t.id),name:val(t,'name'),color:Number(val(t,'color')),colorIndex:Number(val(t,'color_index')),kind:list[i]===master?'master':returns.indexOf(list[i])>=0?'return':'track',devices:devicesIn(t,[],0)});}}
  else if(req.op==='devices'){result={session:SESSION,trackId:req.trackId,devices:devicesIn(track(req.trackId),[],0)};}
  else if(req.op==='parameters'){var d=byId(req.deviceId);belongs(d);var ps=ids(d,'parameters');result={session:SESSION,deviceId:req.deviceId,parameters:[]};for(var i=0;i<ps.length;i++)result.parameters.push(parameterInfo(byId(ps[i])));}
  else if(req.op==='mixer'){var t=track(req.trackId),m=byId(ids(t,'mixer_device')[0]),send=ids(m,'sends');result={session:SESSION,trackId:req.trackId,volume:parameterInfo(byId(ids(m,'volume')[0])),pan:parameterInfo(byId(ids(m,'panning')[0])),mute:Number(val(t,'mute')),solo:Number(val(t,'solo')),sends:[]};for(var i=0;i<send.length;i++)result.sends.push(parameterInfo(byId(send[i])));}
  else if(req.op==='set_parameter'){assertWrite(req);var p=parameter(req.parameterId),info=parameterInfo(p);if(!info.enabled||info.automationState!==0)throw new Error('Parameter disabled or automated');var ch=changeScalar(p,'value',req.value,req.expectedValue,info.min,info.max,info.quantized);delayedVerify(req,p,'value',ch);return;}
+ else if(req.op==='rename_track'||req.op==='set_track_color'){editTrackAppearance(req);return;}
  else if(req.op==='set_track'){assertWrite(req);if(req.property!=='mute'&&req.property!=='solo')throw new Error('Unsupported track property');var t=track(req.trackId);if(ids(api('live_set'),'master_track').indexOf(Number(t.id))>=0)throw new Error('Master mute/solo is unsupported');var ch=changeScalar(t,req.property,req.value,req.expectedValue,0,1,true);delayedVerify(req,t,req.property,ch);return;}
  else if(req.op==='set_song'){assertWrite(req);var song=api('live_set'),bounds={tempo:[20,999,false],signature_numerator:[1,99,true],signature_denominator:[1,16,true]},b=bounds[req.property];if(!b)throw new Error('Unsupported song property');if(req.property==='signature_denominator'&&[1,2,4,8,16].indexOf(req.value)<0)throw new Error('Invalid denominator');if(req.property==='tempo'){var mp=api('live_set master_track mixer_device song_tempo');if(Number(val(mp,'automation_state'))!==0)throw new Error('Tempo is automated');}var ch=changeScalar(song,req.property,req.value,req.expectedValue,b[0],b[1],b[2]);delayedVerify(req,song,req.property,ch);return;}
  else if(req.op==='clips'){var t=track(req.trackId),a=ids(t,'arrangement_clips');result={trackId:Number(t.id),arrangement:[],session:[]};for(var i=0;i<a.length;i++)result.arrangement.push(clipInfo(byId(a[i])));var slots=ids(t,'clip_slots');for(var i=0;i<slots.length;i++){var s=byId(slots[i]);result.session.push({slot:i,slotId:Number(s.id),clip:Number(val(s,'has_clip'))?clipInfo(byId(ids(s,'clip')[0])):null});}}

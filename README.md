@@ -4,7 +4,11 @@ Ableton LiveをCodex / AntigravityなどのMCPクライアントから操作す�
 
 ![Live Bridge mascot](assets/bridge-mascot.png)
 
-MCPサーバー・Maxデバイスともv0.6。JSと画像は.amxdへ同梱されます。Windows・Live 11.3.43で生成したAudio版の読み込み・v0.6応答を確認済みです。新しいクリップ作成機能の実機試験は別途必要です。
+MCPサーバー・Maxデバイスともv0.7。JSと画像は.amxdへ同梱されます。Windows・Live 11.3.43で生成したAudio版の読み込み・v0.7応答を確認済みです。トラック名・色の変更は自動テストで検証済みですが、実機での書き込み確認は未実施です。新しいクリップ作成機能の実機試験も別途必要です。
+
+## v0.7の追加機能
+
+トラック名変更・パレットによる色変更を追加しました。[使用例と安全チェック](docs/track-appearance.md)。既存クリップの色やトラックの並び順は変更しません。
 
 ## できること
 

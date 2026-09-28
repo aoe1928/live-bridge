@@ -180,7 +180,7 @@
             92,
             17
           ],
-          "text": "v0.6 / ALL",
+          "text": "v0.7 / ALL",
           "textcolor": [
             0.46,
             0.43,
@@ -866,7 +866,7 @@
                     748,
                     61
                   ],
-                  "text": "Max for Live の MIDI 版は音源の前、Audio 版は音源の後やマスターへ。Set に1個だけ配置。\nAI 側に Node.js と server.cjs / bridge-config.json を用意し、MCP「ableton_live」を登録。\nSETUP のプロンプトを AI に送ると接続設定を依頼できます。",
+                  "text": "MIDI 版は音源の前、Audio 版はマスターなどへ。Set に1個だけ配置。JS・画像は同梱済み。\nv0.7：トラック名変更・色変更に対応。「ドラムを同じ色にして」など会話で依頼できます。\n初回はセットアップを実行。AI の MCP を再接続して22ツールを確認してください。",
                   "textcolor": [
                     0.44,
                     0.41,
@@ -1122,7 +1122,7 @@
                     748,
                     61
                   ],
-                  "text": "Codex / Antigravity の ableton_live を再接続し、20 ツールを確認します。\nlive_browser_status で接続確認 → live_search_plugins で L2 を検索。\n例：「Kick と Sn の末尾に Waves L2 Stereo を挿して。既にあればスキップして」",
+                  "text": "Codex / Antigravity の ableton_live を再接続し、22 ツールを確認します。\nlive_browser_status で接続確認 → live_search_plugins で L2 を検索。\n例：「Kick と Sn の末尾に Waves L2 Stereo を挿して。既にあればスキップして」",
                   "textcolor": [
                     0.44,
                     0.41,
