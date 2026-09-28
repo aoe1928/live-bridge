@@ -4,7 +4,11 @@ Ableton LiveをCodex / AntigravityなどのMCPクライアントから操作す�
 
 ![Live Bridge mascot](assets/bridge-mascot.png)
 
-MCPサーバー・Maxデバイスともv0.8。JSと画像は.amxdへ同梱されます。Windows・Live 11で並び替えショートカットを確認済み。Macはキー定義・共通ロジックの自動テストのみで、実機未検証です。トラック名・色・新しいクリップ作成の書き込み確認は自動テストのみです。
+MCPサーバー・Maxデバイスともv0.9。JSと画像は.amxdへ同梱されます。Windows・Live 11で並び替えショートカットを確認済み。Macはキー定義・共通ロジックの自動テストのみで、実機未検証です。トラック名・色・新しいクリップ作成の書き込み確認は自動テストのみです。
+
+## v0.9の追加機能
+
+live_create_trackでMIDI・オーディオ・リターントラックを末尾へ新規作成できます。停止・録音状態、Setの接続と作成前後のトラック順序を照合し、新しいトラックIDを返します。画面操作やRemote Scriptは不要です。[使用手順](docs/create-track.md)・[今後の追加候補](docs/roadmap.md)。MCPは27ツールです。新機能は自動テスト済みで、Live実機での作成確認は未実施です。
 
 ## v0.8の追加機能
 

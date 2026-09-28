@@ -109,13 +109,43 @@ function trackOrderSnapshot(){
  var current=ids(api('live_set view'),'selected_track');
  return {session:SESSION,playing:Number(val(song,'is_playing')),recording:Number(val(song,'record_mode'))||Number(val(song,'session_record')),tracks:rows,selectedTrackId:current[0]||0,selectedTrackIds:selected,arrangementVisible:Number(visible)};
 }
+// Keep creation separate from naming/coloring: one mutation, then verify identity/order.
+var trackRequests = {};
+function createTrack(req){
+ if(trackRequests[req.id]){var old=trackRequests[req.id];reply(req.id,old.result||null,old.error||null);return;}
+ assertWrite(req);
+ if(['midi','audio','return'].indexOf(req.type)<0)throw new Error('Invalid track type');
+ var song=api('live_set');
+ if(Number(val(song,'record_mode'))||Number(val(song,'session_record')))throw new Error('Disable recording before creating tracks');
+ function validIds(v){if(!(v instanceof Array))return false;for(var i=0;i<v.length;i++)if(typeof v[i]!=='number'||v[i]<1||v[i]!==Math.floor(v[i])||v.indexOf(v[i])!==i)return false;return true;}
+ if(!validIds(req.expectedTrackIds)||!validIds(req.expectedReturnTrackIds))throw new Error('Expected ordered track ID arrays from live_status');
+ var before=ids(song,'tracks'),returns=ids(song,'return_tracks'),parents=[];
+ function same(a,b){return JSON.stringify(a)===JSON.stringify(b);}
+ if(!same(before,req.expectedTrackIds)||!same(returns,req.expectedReturnTrackIds))throw new Error('Track list changed; read status again before creating');
+ for(var i=0;i<before.length;i++)parents.push(ids(byId(before[i]),'group_track')[0]||0);
+ var record={error:'Track creation pending; inspect live_status and live_list_tracks before retry'};trackRequests[req.id]=record;
+ function fail(e){record.error=String(e)+'; a new track may remain. Inspect live_status and live_list_tracks before retry; do not blindly repeat.';reply(req.id,null,record.error);}
+ try{if(req.type==='return')song.call('create_return_track');else song.call('create_'+req.type+'_track',-1);}catch(e){fail(e);return;}
+ var task=new Task(function(){try{
+  if(req.expectedSession!==SESSION)throw new Error('Session changed during track creation');
+  var after=ids(song,'tracks'),afterReturns=ids(song,'return_tracks'),list=req.type==='return'?afterReturns:after,original=req.type==='return'?returns:before;
+  if(list.length!==original.length+1||!same(list.slice(0,-1),original)||!same(req.type==='return'?after:afterReturns,req.type==='return'?before:returns))throw new Error('Track order/count verification failed');
+  for(var j=0;j<before.length;j++)if((ids(byId(before[j]),'group_track')[0]||0)!==parents[j])throw new Error('Existing group membership changed');
+  var id=list[list.length-1];if(before.indexOf(id)>=0||returns.indexOf(id)>=0)throw new Error('Expected a new track ID');
+  var t=byId(id),parent=ids(t,'group_track')[0]||0;
+  if(parent||Number(val(t,'is_foldable'))||Number(val(t,'has_midi_input'))!==(req.type==='midi'?1:0))throw new Error('New track type/group verification failed');
+  var result={session:SESSION,trackId:id,type:req.type,name:val(t,'name'),colorIndex:Number(val(t,'color_index')),index:list.length-1,trackIds:after,returnTrackIds:afterReturns,verified:true};
+  record.error=null;record.result=result;cache[req.id]=result;reply(req.id,result);
+ }catch(e){fail(e);}},this);tasks.push(task);task.schedule(200);
+}
 function anything() {
  if(messagename!=='/codex')return;
  var req;try {req=JSON.parse(String(arrayfromargs(arguments)[0]));if(req.token!==TOKEN)return;refreshUI(req.op);if(!ready)throw new Error('Live device is initializing');
  if(req.expectedSession && req.expectedSession!==SESSION)throw new Error('Live connection changed; read again');
  if(cache[req.id]){reply(req.id,cache[req.id]);return;}
  var result;
- if(req.op==='status'){var t=host(),song=api('live_set');result={hostTrackId:Number(t.id),hostTrackName:val(t,'name'),tempo:val(song,'tempo'),playing:val(song,'is_playing'),bridge:'0.8.0',scope:'project',session:SESSION,currentBeat:val(song,'current_song_time'),signatureNumerator:val(song,'signature_numerator'),signatureDenominator:val(song,'signature_denominator'),loop:val(song,'loop'),loopStart:val(song,'loop_start'),loopLength:val(song,'loop_length'),canUndo:val(song,'can_undo'),canRedo:val(song,'can_redo')};}
+ if(req.op==='status'){var t=host(),song=api('live_set');result={hostTrackId:Number(t.id),hostTrackName:val(t,'name'),tempo:val(song,'tempo'),playing:val(song,'is_playing'),bridge:'0.9.0',trackIds:ids(song,'tracks'),returnTrackIds:ids(song,'return_tracks'),scope:'project',session:SESSION,currentBeat:val(song,'current_song_time'),signatureNumerator:val(song,'signature_numerator'),signatureDenominator:val(song,'signature_denominator'),loop:val(song,'loop'),loopStart:val(song,'loop_start'),loopLength:val(song,'loop_length'),canUndo:val(song,'can_undo'),canRedo:val(song,'can_redo')};}
+ else if(req.op==='create_track'){createTrack(req);return;}
  else if(req.op==='track_order'){result=trackOrderSnapshot();}
  else if(req.op==='transport'){
   var song=api('live_set');
