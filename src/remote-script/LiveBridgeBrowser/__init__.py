@@ -30,7 +30,7 @@ class LiveBridgeBrowser(ControlSurface):
         self.sock.bind(('127.0.0.1', self.config['port']))
         self.sock.setblocking(False)
         self.schedule_message(1, self.poll)
-        self.log_message('LiveBridgeBrowser 0.1 ready on loopback')
+        self.log_message('LiveBridgeBrowser 0.2 ready on loopback')
 
     def disconnect(self):
         self.running = False
@@ -102,7 +102,8 @@ class LiveBridgeBrowser(ControlSurface):
         op = req['op']
         if op == 'status':
             browser = self.application().browser
-            return {'version': '0.1.0', 'session': self.session, 'playing': self.song().is_playing,
+            return {'version': '0.2.0', 'session': self.session, 'playing': self.song().is_playing,
+                    'capabilities': {'pluginInsertion': 'any_searched_plugin'},
                     'roots': [k for k in ('plugins', 'audio_effects', 'user_library') if hasattr(browser, k)],
                     'tracks': self.snapshot()}
         if op == 'search':
@@ -172,11 +173,8 @@ class LiveBridgeBrowser(ControlSurface):
         item = self.items.get(req.get('itemId'))
         if item is None or not item.is_loadable:
             raise RuntimeError('Search again for the plugin')
-        # Initial release deliberately restricts loading to Waves L2 variants.
-        if str(item.name).lower() not in ('l2 stereo', 'l2 mono', 'l2'):
-            raise RuntimeError('Initial release only permits L2 Mono / Stereo')
-        if any(str(d.name).lower() in ('l2 stereo', 'l2 mono', 'l2') for d in target.devices):
-            raise RuntimeError('L2 is already present; refusing duplicate')
+        # No product allowlist. The exact searched BrowserItem is loaded below.
+        requested_name = str(item.name)
         browser = self.application().browser
         if browser.hotswap_target is not None:
             raise RuntimeError('Exit browser hot-swap mode before inserting')
@@ -192,23 +190,43 @@ class LiveBridgeBrowser(ControlSurface):
         self.receipts[req['id']] = {'error': 'Insertion started; outcome pending, inspect before retry'}
         while len(self.receipts) > 128:
             self.receipts.popitem(last=False)
+        def restore_view():
+            try:
+                target.view.device_insert_mode = mode
+                if song.view.selected_track == target and saved_track in self.tracks():
+                    song.view.selected_track = saved_track
+                    if saved_device:
+                        song.view.select_device(saved_device)
+            except Exception:
+                pass
+
         try:
             browser.load_item(item)
-        except Exception:
+        except Exception as e:
             self.busy = False
-            target.view.device_insert_mode = mode
-            raise
+            restore_view()
+            error = 'Plugin load failed: {}; partial insertion may remain; inspect before retry'.format(e)
+            self.receipts[req['id']] = {'error': error}
+            self.send(address, req['id'], error=error)
+            return None
 
         def verify():
             try:
+                if target not in self.tracks() or req.get('expectedSession') != self.session:
+                    raise RuntimeError('Target or session changed during insertion; inspect before retry')
                 after = list(target.devices)
                 if len(after) != len(before) + 1 or after[:-1] != before:
                     raise RuntimeError('Unexpected insertion result; inspect chain; do not retry blindly')
                 device = after[-1]
-                if 'l2' not in device.name.lower():
-                    raise RuntimeError('Unexpected inserted device: ' + device.name)
+                def normalized(name):
+                    return ''.join(c for c in str(name).casefold() if c.isalnum())
+                actual_names = [device.name, getattr(device, 'class_display_name', '')]
+                if normalized(requested_name) not in [normalized(n) for n in actual_names]:
+                    raise RuntimeError('Inserted device name differs from searched item: {} -> {}; inspect before retry'.format(requested_name, device.name))
                 result = {'verified': True, 'track': target.name, 'targetId': req['targetId'],
-                          'insertedName': device.name, 'index': len(before), 'fingerprint': self.signature(target)}
+                          'requestedName': requested_name, 'itemId': req['itemId'],
+                          'insertedName': device.name, 'insertedDeviceId': str(device._live_ptr),
+                          'index': len(before), 'fingerprint': self.signature(target)}
                 self.receipts[req['id']] = {'result': result}
                 self.send(address, req['id'], result=result)
             except Exception as e:
@@ -216,13 +234,6 @@ class LiveBridgeBrowser(ControlSurface):
                 self.send(address, req['id'], error=str(e))
             finally:
                 self.busy = False
-                try:
-                    target.view.device_insert_mode = mode
-                    if song.view.selected_track == target and saved_track in self.tracks():
-                        song.view.selected_track = saved_track
-                        if saved_device:
-                            song.view.select_device(saved_device)
-                except Exception:
-                    pass
+                restore_view()
         self.schedule_message(5, verify)
         return None

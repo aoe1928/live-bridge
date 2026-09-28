@@ -144,7 +144,7 @@ function anything() {
  if(req.expectedSession && req.expectedSession!==SESSION)throw new Error('Live connection changed; read again');
  if(cache[req.id]){reply(req.id,cache[req.id]);return;}
  var result;
- if(req.op==='status'){var t=host(),song=api('live_set');result={hostTrackId:Number(t.id),hostTrackName:val(t,'name'),tempo:val(song,'tempo'),playing:val(song,'is_playing'),bridge:'0.9.0',trackIds:ids(song,'tracks'),returnTrackIds:ids(song,'return_tracks'),scope:'project',session:SESSION,currentBeat:val(song,'current_song_time'),signatureNumerator:val(song,'signature_numerator'),signatureDenominator:val(song,'signature_denominator'),loop:val(song,'loop'),loopStart:val(song,'loop_start'),loopLength:val(song,'loop_length'),canUndo:val(song,'can_undo'),canRedo:val(song,'can_redo')};}
+ if(req.op==='status'){var t=host(),song=api('live_set');result={hostTrackId:Number(t.id),hostTrackName:val(t,'name'),tempo:val(song,'tempo'),playing:val(song,'is_playing'),bridge:'0.10.0',trackIds:ids(song,'tracks'),returnTrackIds:ids(song,'return_tracks'),scope:'project',session:SESSION,currentBeat:val(song,'current_song_time'),signatureNumerator:val(song,'signature_numerator'),signatureDenominator:val(song,'signature_denominator'),loop:val(song,'loop'),loopStart:val(song,'loop_start'),loopLength:val(song,'loop_length'),canUndo:val(song,'can_undo'),canRedo:val(song,'can_redo')};}
  else if(req.op==='create_track'){createTrack(req);return;}
  else if(req.op==='track_order'){result=trackOrderSnapshot();}
  else if(req.op==='transport'){
@@ -211,6 +211,7 @@ function anything() {
   slot.call('create_clip',end-start);
   var task=new Task(function(){try{var dest=byId(ids(slot,'clip')[0]);dest.set('name','Codex Test - '+String(info.name));dest.call('add_new_notes',JSON.stringify({notes:copy}));var done=new Task(function(){try{var read=notes(dest);if(read.length!==copy.length)throw new Error('Note count verification failed');var rr={sourceClipId:Number(c.id),createdClip:clipInfo(dest),sessionSlot:slotIndex,noteCount:read.length,firstNote:read[0],velocityDelta:delta};cache[req.id]=rr;reply(req.id,rr);}catch(e){reply(req.id,null,String(e));}},this);tasks.push(done);done.schedule(200);}catch(e){reply(req.id,null,String(e));}},this);tasks.push(task);task.schedule(200);return;
  }
+ else if(typeof extendedDispatch==='function'&&extendedDispatch(req))return;
  else throw new Error('Unknown operation');
  reply(req.id,result);
  }catch(e){reply(req?req.id:'unknown',null,String(e));}
