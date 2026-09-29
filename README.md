@@ -112,4 +112,8 @@ python -m unittest discover -s test -p "test_*.py"
 
 Keep this English README and [README.ja.md](README.ja.md) synchronized when changing features, setup, limitations, or verification status.
 
-No reuse license has been assigned yet. Public availability does not itself grant redistribution rights, including rights to the character artwork.
+## License
+
+Project-authored code and documentation are licensed under the [MIT License](LICENSE).
+
+**Images and character artwork are excluded from MIT**, including `assets/bridge-mascot.png` and its copies embedded in generated devices. See the [artwork licensing notice](assets/LICENSE.md). Obtain separate permission or use replacement artwork you have rights to distribute. Third-party code and assets retain their own license terms.

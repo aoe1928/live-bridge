@@ -2,6 +2,7 @@
   "name": "live-bridge",
   "version": "0.10.0",
   "private": true,
+  "license": "MIT",
   "description": "Max for Live and Remote Script bridge for MCP clients",
   "scripts": {
     "build": "node scripts/build.cjs",
