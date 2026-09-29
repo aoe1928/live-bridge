@@ -8,7 +8,14 @@ Control Ableton Live from MCP clients such as Codex and Antigravity using a Max 
 
 The MCP server and Max devices are **v0.10**, with **48 MCP tools**. JavaScript and the mascot image are bundled inside each `.amxd`. The browser Remote Script is **v0.2.0**.
 
-Windows / Live 11 track-reordering shortcuts have been verified in Live. macOS has only automated coverage for key definitions and shared logic; it has not been tested on a Mac. Track appearance, new clip creation, and the production tools added in v0.10 have automated tests but have not been verified in Live.
+## Tested environment and compatibility
+
+**Tested on Ableton Live 11 / Windows.** This describes the environment used for the existing Live checks, not verification of every feature in the current release.
+
+- Verified in Live: the previously tested MIDI editing workflow, L2 insertion with existing-chain preservation, and track-reordering shortcuts.
+- Automated tests only: track appearance, new clip/track creation, and the production tools added in v0.10. These still need verification in Live.
+- **Ableton Live 12: not tested.** Compatibility is not confirmed, especially for Remote Script browser integration.
+- **macOS: not tested on hardware.** Key definitions and shared logic have automated coverage only.
 
 ## What's new in v0.10
 
