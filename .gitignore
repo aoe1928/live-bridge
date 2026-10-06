@@ -22,3 +22,7 @@ move-history/
 
 production-history/
 mix-snapshots/
+
+**/automation-history/
+
+**/set-automation-snapshots/

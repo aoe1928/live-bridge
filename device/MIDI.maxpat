@@ -180,7 +180,7 @@
             92,
             17
           ],
-          "text": "v0.10 / ALL",
+          "text": "v0.13 / ALL",
           "textcolor": [
             0.46,
             0.43,
@@ -899,7 +899,7 @@
                     748,
                     61
                   ],
-                  "text": "MIDI 版は音源の前、Audio 版はマスターなどへ。Set に1個だけ配置。JS・画像は同梱済み。\nv0.10：L2限定解除、一括設定・入出力・複製削除・MIDI/クリップ・シーン/ロケーター・ミックス保存復元に対応。実機未検証。\n初回はセットアップを実行。AI の MCP を再接続して48ツールを確認してください。",
+                  "text": "MIDI 版は音源の前、Audio 版はマスターなどへ。Set に1個だけ配置。JS・画像は同梱済み。\nv0.13：Arrangement自動記録・Bezier点列生成を追加。録音は近似。詳細はrecording.md。\n初回はセットアップを実行。AI の MCP を再接続して62ツールを確認してください。",
                   "textcolor": [
                     0.44,
                     0.41,
@@ -1155,7 +1155,7 @@
                     748,
                     61
                   ],
-                  "text": "Codex / Antigravity の ableton_live を再接続し、48 ツールを確認します。\nlive_browser_status で接続確認 → live_search_plugins で検索 → live_insert_plugin で挿入。\n例：「Kick と Sn の末尾に Waves L2 Stereo を挿して。既にあればスキップして」",
+                  "text": "Codex / Antigravity の ableton_live を再接続し、62 ツールを確認します。\nlive_browser_status で接続確認 → live_search_plugins で検索 → live_insert_plugin で挿入。\n例：「Kick と Sn の末尾に Waves L2 Stereo を挿して。既にあればスキップして」",
                   "textcolor": [
                     0.44,
                     0.41,
@@ -1219,7 +1219,7 @@
                     748,
                     61
                   ],
-                  "text": "再生・録音を停止して実行。指定トラックの末尾へ1本ずつ挿入し、結果を照合します。\n製品名の制限なし。音声出力のない MIDI、フリーズ中は対象外です。\n制作ツールの使い方はサーバーフォルダーの production.md。Set保存・Rack内挿入は対象外。",
+                  "text": "再生・録音を停止して実行。指定トラックの末尾へ1本ずつ挿入し、結果を照合します。\n製品名の制限なし。音声出力のない MIDI、フリーズ中は対象外です。\n使い方：production.md／automation.md／set-automation.md。Set編集は別ファイルを生成。",
                   "textcolor": [
                     0.44,
                     0.41,

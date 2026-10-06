@@ -6,14 +6,32 @@ Control Ableton Live from MCP clients such as Codex and Antigravity using a Max 
 
 ![Live Bridge mascot](assets/bridge-mascot.png)
 
-The MCP server and Max devices are **v0.10**, with **48 MCP tools**. JavaScript and the mascot image are bundled inside each `.amxd`. The browser Remote Script is **v0.2.0**.
+The MCP server and Max devices are **v0.13**, with **62 MCP tools**. JavaScript and the mascot image are bundled inside each `.amxd`. The browser Remote Script is **v0.4.0**.
+
+## Arrangement recording and curve generation in v0.13 (experimental)
+
+Record a bounded parameter gesture directly into the open Arrangement, including master tempo: prepare, start, poll status, and cancel. Tracks must be disarmed; playback, Session clips, loop, punch, count-in and Link must be off. The run is limited to 64 beats / 120 seconds and stops on detected conflicts. **Recording starts playback and can overwrite automation.** Save a backup first. Completion confirms transport cleanup, not exact breakpoints; scheduler timing and the end value are approximate.
+
+Live 11.3.43 / Windows validation saved new volume and tempo automation events from real recording runs. A read-only capability tool reports the running API and blocking recording conditions. An offline cubic Bezier generator produces sampled points for Session, recording and saved-Set workflows; it does not author native Live Bezier handles. See the [bilingual recording guide](docs/recording.md).
+
+## Saved-Set automation in v0.12 (experimental, offline)
+
+Read exact stored Arrangement breakpoints and curve attributes across normal/group/Return/master tracks, edit or create continuous envelopes (including tempo), and restore the original saved Set byte-for-byte. Four new MCP tools work on **saved Live 11 `.als` files**, without connecting to Live. Edits create a new file beside the source; they never change the open Set. Snapshot restoration refuses unrelated non-envelope changes. Original curved segments retain their stored metadata; new points use default interpolation. Live 12 files are rejected pending schema verification.
+
+Verified on **Live 11.3.43 / Windows** in a separate empty validation Set: generated tempo/volume envelopes load, tempo follows during silent playback, volume automation is displayed, saved points survive Live serialization, and a byte-exact restored Set loads with original values. This is focused coverage, not verification of every parameter or curve type. See the [bilingual saved-Set guide](docs/set-automation.md). Existing Session tools still require the Remote Script.
+
+
+## Automation in v0.11 (experimental)
+
+Four new tools discover Session clip/parameter targets, sample envelopes, write steps or approximated linear ramps, and clear a selected envelope. Requires Remote Script v0.3.0. Live 11.3.43 / Windows checks cover volume ramps, pan/send/device-On steps, selected-envelope clearing, save/reload persistence and stale-token/session/playback guards. These Session/Remote Script tools do not provide original breakpoint editing, exact backup/restore, Arrangement/master/tempo envelopes or automation recording. Use the separate v0.12 saved-Set tools for offline Arrangement/tempo editing and exact restoration. See the [bilingual automation guide](docs/automation.md) for limits and reload instructions.
+
 
 ## Tested environment and compatibility
 
 **Tested on Ableton Live 11 / Windows.** This describes the environment used for the existing Live checks, not verification of every feature in the current release.
 
-- Verified in Live: the previously tested MIDI editing workflow, L2 insertion with existing-chain preservation, and track-reordering shortcuts.
-- Automated tests only: track appearance, new clip/track creation, and the production tools added in v0.10. These still need verification in Live.
+- Verified in Live: the previously tested MIDI editing workflow, L2 insertion with existing-chain preservation, and track-reordering shortcuts; plus the focused automation checks above and empty Session MIDI clip creation. [Validation record](docs/validation-2026-10-06.md).
+- Automated tests only: track appearance, other new clip/track creation paths, and the production tools added in v0.10. These still need verification in Live.
 - **Ableton Live 12: not tested.** Compatibility is not confirmed, especially for Remote Script browser integration.
 - **macOS: not tested on hardware.** Key definitions and shared logic have automated coverage only.
 

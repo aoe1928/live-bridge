@@ -144,7 +144,7 @@ function anything() {
  if(req.expectedSession && req.expectedSession!==SESSION)throw new Error('Live connection changed; read again');
  if(cache[req.id]){reply(req.id,cache[req.id]);return;}
  var result;
- if(req.op==='status'){var t=host(),song=api('live_set');result={hostTrackId:Number(t.id),hostTrackName:val(t,'name'),tempo:val(song,'tempo'),playing:val(song,'is_playing'),bridge:'0.10.0',trackIds:ids(song,'tracks'),returnTrackIds:ids(song,'return_tracks'),scope:'project',session:SESSION,currentBeat:val(song,'current_song_time'),signatureNumerator:val(song,'signature_numerator'),signatureDenominator:val(song,'signature_denominator'),loop:val(song,'loop'),loopStart:val(song,'loop_start'),loopLength:val(song,'loop_length'),canUndo:val(song,'can_undo'),canRedo:val(song,'can_redo')};}
+ if(req.op==='status'){var t=host(),song=api('live_set');result={hostTrackId:Number(t.id),hostTrackName:val(t,'name'),tempo:val(song,'tempo'),playing:val(song,'is_playing'),bridge:'0.13.0',trackIds:ids(song,'tracks'),returnTrackIds:ids(song,'return_tracks'),scope:'project',session:SESSION,currentBeat:val(song,'current_song_time'),signatureNumerator:val(song,'signature_numerator'),signatureDenominator:val(song,'signature_denominator'),loop:val(song,'loop'),loopStart:val(song,'loop_start'),loopLength:val(song,'loop_length'),canUndo:val(song,'can_undo'),canRedo:val(song,'can_redo')};}
  else if(req.op==='create_track'){createTrack(req);return;}
  else if(req.op==='track_order'){result=trackOrderSnapshot();}
  else if(req.op==='transport'){

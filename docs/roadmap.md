@@ -35,3 +35,17 @@ v0.10で、指定された8項目の制作ツールを追加しました。[現�
 - 任意のArrangementオートメーション描画：現在値変更とは異なる。対象Live版と公開APIの書き込み範囲を調査してから設計。
 
 仕様の根拠：[Song](https://docs.cycling74.com/apiref/lom/song/)、[Track](https://docs.cycling74.com/apiref/lom/track/)、[Clip](https://docs.cycling74.com/apiref/lom/clip/)。上の「実装方針」はこれらと既存コードを基にした提案です。
+
+## v0.11 オートメーション
+
+Sessionクリップのサンプリング・ステップ／直線近似・全エンベロープ削除を追加。詳細と未対応範囲は[automation.md](automation.md)。Arrangement・テンポの曲線、元の折れ点取得と完全復元は引き続き未実装。
+
+## v0.12 保存済みSetのオートメーション
+
+Live 11の保存済みSetに対するArrangement・テンポの点編集／新規エンベロープ作成、元の属性付き折れ点取得、元Setのバイト完全復元を追加。[オフラインツール](set-automation.md)。ツール自体は開いているLiveへ反映しない。2026-10-06にLive 11.3.43 / Windowsの専用Setで読み込み・無音再生中のテンポ追従・保存・復元を確認。[検証記録](validation-2026-10-06.md)。v0.11の未実装記録は当時の状態。
+
+## v0.13 follow-up / 追加対応
+
+Bounded real-time Arrangement recording (including master tempo), runtime capability diagnostics and an offline sampled Bezier generator are implemented. See [recording guide](recording.md) and [validation](validation-2026-10-06.md). Native handle authoring, exact breakpoint enumeration in the running Set, and macOS / Live 12 verification remain open.
+
+Arrangementへの時間制限付き自動記録、実行環境の確認、Bezier点列生成を追加。ネイティブのハンドル作成、開いているSetからの折れ点完全取得、Mac／Live 12実機検証は残っています。

@@ -1,0 +1,5 @@
+const test=require('node:test'),assert=require('node:assert/strict'),{generateCurve}=require('../src/automation-tools.cjs');
+const args={startBeat:0,endBeat:4,startValue:100,endValue:140,x1:.25,y1:0,x2:.75,y2:1,sampleCount:33};
+test('Bezier generator preserves endpoints and creates monotone bounded samples',()=>{let c=generateCurve(args);assert.deepEqual(c.points[0],{beat:0,value:100});assert.deepEqual(c.points.at(-1),{beat:4,value:140});assert.deepEqual(c.points[16],{beat:2,value:120});assert(c.points.every((p,i)=>p.value>=100&&p.value<=140&&(!i||p.beat>c.points[i-1].beat)));assert.equal(c.liveChanged,false);assert.deepEqual(c.setPoints[16],{time:2,value:120});});
+test('Bezier rejects invalid handles, precision and nonfinite values',()=>{for(const patch of [{x1:2},{x1:.9,x2:.2},{endBeat:0},{startValue:NaN},{sampleCount:129},{startValue:-Number.MAX_VALUE,endValue:Number.MAX_VALUE}])assert.throws(()=>generateCurve({...args,...patch}));});
+test('Bezier supports descending values without overshoot',()=>{let c=generateCurve({...args,startValue:1,endValue:0});assert(c.points.every(p=>p.value>=0&&p.value<=1));});
