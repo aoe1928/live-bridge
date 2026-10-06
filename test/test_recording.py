@@ -1,10 +1,10 @@
 import unittest
-from test_automation import AutomationTests
+import test_automation
 from test_browser import module
 
 class RecordingTests(unittest.TestCase):
     def fixture(self):
-        b,c,p,t,s,_,_=AutomationTests().fixture()
+        b,c,p,t,s,_,_=test_automation.AutomationTests().fixture()
         for k,v in dict(loop=False,punch_in=False,punch_out=False,back_to_arranger=False,count_in_duration=0,is_ableton_link_enabled=False,current_song_time=10,session_automation_record=False,tracks=[t]).items():setattr(s,k,v)
         t.can_be_armed=True;t.arm=False;t.playing_slot_index=-1
         p.begin_gesture=lambda:setattr(p,'gesture',True)
