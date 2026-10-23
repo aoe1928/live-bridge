@@ -186,10 +186,32 @@ function xMixRestore(req){
  for(var i=0;i<req.values.length;i++){var ch=req.values[i];for(var j=0;j<desired.length;j++){if(ch.property==='value'){for(var k=0;k<desired[j].parameters.length;k++)if(desired[j].parameters[k].id===ch.id)desired[j].parameters[k].value=ch.value;}else if(desired[j].id===ch.id)desired[j][ch.property]=ch.value;}}
  xApply(req,bindings,function(){var after=xMix(req.trackIds);if(after.topology!==current.topology)throw new Error('Mix topology changed during restore');for(var i=0;i<desired.length;i++){var a=after.tracks[i],b=desired[i];if(a.mute!==b.mute||a.solo!==b.solo)throw new Error('Other mixer switches changed during restore');for(var j=0;j<b.parameters.length;j++)if(!xEqual(a.parameters[j].value,b.parameters[j].value))throw new Error('Other parameter changed during restore');}});
 }
+var AUDIO_FILE=/\.(wav|aif|aiff|aifc|flac|mp3|m4a|ogg)$/i;
+function xAudioClipInfo(c){return {id:Number(c.id),name:val(c,'name'),filePath:String(val(c,'file_path')),isMidi:Number(val(c,'is_midi_clip')),warping:Number(val(c,'warping')),length:Number(val(c,'length')),startTime:Number(val(c,'start_time')),endTime:Number(val(c,'end_time')),loopStart:Number(val(c,'loop_start')),loopEnd:Number(val(c,'loop_end'))};}
+function xAudioClipCreate(req){
+ xGuard(req);var t=xTrack(req.trackId);
+ if(!Number(val(t,'has_audio_input')))throw new Error('Not an audio track');
+ var file=req.filePath;if(typeof file!=='string'||!(file.charAt(0)==='/'||/^[A-Za-z]:[\\\/]/.test(file)))throw new Error('Absolute file path required');
+ if(!AUDIO_FILE.test(file))throw new Error('Unsupported audio file extension');
+ if(req.name!==undefined)xName(req.name);
+ var hasSlot=typeof req.slotIndex==='number',hasPos=typeof req.position==='number';
+ if(hasSlot===hasPos)throw new Error('Specify exactly one of slotIndex or position');
+ function finish(c,placement){if(req.name!==undefined)c.set('name',req.name);var info=xAudioClipInfo(c);if(info.isMidi)throw new Error('Created clip is not an audio clip');xFinish(req,{trackId:Number(req.trackId),placement:placement,clip:info});}
+ if(hasSlot){
+  xNumber(req.slotIndex,0,4096,true);var slots=ids(t,'clip_slots');if(!slots[req.slotIndex])throw new Error('Slot index outside Session scenes');
+  var slot=byId(slots[req.slotIndex]);if(Number(val(slot,'has_clip')))throw new Error('Slot occupied');
+  slot.call('create_audio_clip',file);
+  xLater(req,function(){if(!Number(val(slot,'has_clip')))throw new Error('Clip not created; check that Live can read the file');finish(byId(ids(slot,'clip')[0]),'session');});
+ }else{
+  xNumber(req.position,0,1576800,false);var before=ids(t,'arrangement_clips');
+  t.call('create_audio_clip',file,req.position);
+  xLater(req,function(){var after=ids(t,'arrangement_clips'),fresh=[];for(var i=0;i<after.length;i++)if(before.indexOf(after[i])<0)fresh.push(after[i]);if(fresh.length!==1)throw new Error('Clip not created; check that Live can read the file');var c=byId(fresh[0]);if(Math.abs(Number(val(c,'start_time'))-req.position)>0.001)throw new Error('Clip created at unexpected position '+val(c,'start_time'));finish(c,'arrangement');});
+ }
+}
 function extendedDispatch(req){
  var read={x_routing_read:function(){return xRouting(req.trackId);},x_clip_read:function(){return xClip(req.clipId);},x_scenes_read:xScenes,x_locators_read:xLocators,x_mix_read:function(){return xMix(req.trackIds);}};
  if(read[req.op]){reply(req.id,read[req.op]());return true;}
- var write={x_batch:xBatch,x_routing_set:xSetRouting,x_track_duplicate:xTrackStructure,x_track_delete:xTrackStructure,x_notes_update:xNotes,x_notes_add:xNotes,x_notes_delete:xNotes,x_clip_set:xClipSet,x_scene:xScene,x_locator:xLocator,x_mix_restore:xMixRestore};
+ var write={x_batch:xBatch,x_routing_set:xSetRouting,x_track_duplicate:xTrackStructure,x_track_delete:xTrackStructure,x_notes_update:xNotes,x_notes_add:xNotes,x_notes_delete:xNotes,x_clip_set:xClipSet,x_audio_clip_create:xAudioClipCreate,x_scene:xScene,x_locator:xLocator,x_mix_restore:xMixRestore};
  if(!write[req.op])return false;
  if(productionRequests[req.id]){var old=productionRequests[req.id];reply(req.id,old.result||null,old.error||null);return true;}
  productionRequests[req.id]={error:'Operation pending; inspect current state before retry'};

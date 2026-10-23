@@ -6,7 +6,7 @@ Ableton LiveをCodex / AntigravityなどのMCPクライアントから操作す�
 
 ![Live Bridge mascot](assets/bridge-mascot.png)
 
-MCPサーバー・Maxデバイスともv0.13（62ツール、Remote Script v0.4.0）。JSと画像は.amxdへ同梱されます。
+MCPサーバー・Maxデバイスともv0.13（63ツール、Remote Script v0.4.0）。JSと画像は.amxdへ同梱されます。
 
 ## v0.13 アレンジメントへの自動記録・曲線生成（実験的）
 
@@ -32,8 +32,8 @@ Sessionクリップとパラメーターの列挙、値のサンプリング、�
 
 - 実機確認済み：これまでに試験したMIDI編集、既存チェーンを維持したL2挿入、トラック並び替えショートカット。今回のオートメーション検証と空のSession MIDIクリップ作成も確認済み。[検証記録](docs/validation-2026-10-06.md)。
 - 自動テストのみ：トラック名・色、上記以外のクリップ／トラック作成経路、v0.10で追加した制作ツール。これらの実機確認は今後必要です。
-- **Ableton Live 12：未検証。** 特にRemote Scriptのブラウザー連携を含め、互換性は未確認です。
-- **macOS：実機未検証。** キー定義と共通処理の自動テストのみ実施しています。
+- **Ableton Live 12.1.5 / macOS（Apple Silicon）：2026-10-23に実機確認。** デバイス側の基本ツール（状態・トラック・デバイス・パラメーター・ミキサー・Sessionクリップ作成・ノート読み戻し・パラメーターとミュートの書き込み）と、Remote Scriptのブラウザー連携（状態・プラグイン検索・VST3挿入）を確認。macOS固有の不具合（9216バイト超のUDP返答をOSが拒否）を見つけて修正し、大きな返答は分割送信にしました。[macOS検証記録](docs/validation-2026-10-23-macos.md)。
+- macOSで未実施：Sessionオートメーション書き込み、Arrangement記録、保存済みSetのオフラインツール。Remote Scriptへの9216バイト超の要求はmacOSでは引き続き失敗します。
 
 ## v0.10の追加機能
 
@@ -91,6 +91,8 @@ AIとの接続にはPC側のMCPサーバーが必要なので、distフォルダ
 ## 新しいMIDIクリップの作成
 
 live_create_clipでノート配列からSessionクリップを作成し、任意の拍位置にArrangementへ配置できます。[引数・例・制限](docs/create-clip.md)を参照してください。
+
+live_create_audio_clipで、ディスク上のオーディオファイルを参照するオーディオクリップを、オーディオトラックの空きSessionスロットかArrangementの拍位置に作成できます（Liveの`ClipSlot.create_audio_clip` / `Track.create_audio_clip`）。サーバーがファイルの存在を確認してからLiveへ送り、デバイス側で作成結果（ファイルパス・長さ・Warp状態）を検証して返します。Remote Scriptは不要です。Live 12.1.5 / macOSで、空白・日本語・ノーブレークスペースを含むパスで確認済み。[引数と制限](docs/create-audio-clip.md)。
 
 ## 構成
 

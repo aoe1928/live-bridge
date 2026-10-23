@@ -115,3 +115,33 @@ class BrowserTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class SendFramingTests(unittest.TestCase):
+    """macOS rejects UDP datagrams above net.inet.udp.maxdgram (9216 bytes) with EMSGSIZE."""
+
+    def make(self):
+        bridge = module.LiveBridgeBrowser.__new__(module.LiveBridgeBrowser)
+        bridge.running = True
+        sent = []
+        bridge.sock = NS(sendto=lambda data, address: sent.append((data, address)))
+        return bridge, sent
+
+    def test_small_reply_is_one_plain_frame(self):
+        bridge, sent = self.make()
+        bridge.send(('127.0.0.1', 1), 'r1', result={'ok': True})
+        self.assertEqual(len(sent), 1)
+        self.assertEqual(module.json.loads(sent[0][0]), {'id': 'r1', 'result': {'ok': True}, 'error': None})
+
+    def test_large_reply_is_split_into_frames_under_macos_limit(self):
+        bridge, sent = self.make()
+        result = {'matches': [{'name': 'x' * 100, 'uri': 'query:' + 'y' * 100} for _ in range(120)]}
+        bridge.send(('127.0.0.1', 1), 'r2', result=result)
+        self.assertGreater(len(sent), 1)
+        frames = [module.json.loads(d) for d, _ in sent]
+        for f in frames:
+            self.assertLessEqual(len(module.json.dumps(f, ensure_ascii=True).encode('utf8')), 9216)
+            self.assertEqual(f['id'], 'r2')
+            self.assertEqual(f['frames'], len(frames))
+        joined = ''.join(f['part'] for f in sorted(frames, key=lambda f: f['frame']))
+        self.assertEqual(module.json.loads(joined), {'id': 'r2', 'result': result, 'error': None})
