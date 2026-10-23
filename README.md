@@ -32,8 +32,8 @@ Four new tools discover Session clip/parameter targets, sample envelopes, write 
 
 - Verified in Live: the previously tested MIDI editing workflow, L2 insertion with existing-chain preservation, and track-reordering shortcuts; plus the focused automation checks above and empty Session MIDI clip creation. [Validation record](docs/validation-2026-10-06.md).
 - Automated tests only: track appearance, other new clip/track creation paths, and the production tools added in v0.10. These still need verification in Live.
-- **Ableton Live 12: not tested.** Compatibility is not confirmed, especially for Remote Script browser integration.
-- **macOS: not tested on hardware.** Key definitions and shared logic have automated coverage only.
+- **Ableton Live 12.1.5 / macOS (Apple Silicon): verified 2026-10-23** for the core device tools (status, tracks, devices, parameters, mixer, Session clip creation, note read-back, parameter and mute writes) and the Remote Script browser tools (status, plugin search, VST3 insertion). This run found and fixed a macOS-only failure: UDP replies above 9216 bytes were rejected by the OS, so large Remote Script replies are now sent as frames. [macOS validation record](docs/validation-2026-10-23-macos.md).
+- Not exercised on macOS: Session automation writes, Arrangement recording and the offline saved-Set tools. Requests to the Remote Script above 9216 bytes still fail on macOS.
 
 ## What's new in v0.10
 
