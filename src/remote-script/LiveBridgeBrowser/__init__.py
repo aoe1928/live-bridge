@@ -16,6 +16,8 @@ def create_instance(c_instance):
 
 
 class LiveBridgeBrowser(ControlSurface):
+    FRAME_BYTES = 7000  # keep each UDP frame under macOS' 9216-byte datagram limit
+
     def __init__(self, c_instance):
         super(LiveBridgeBrowser, self).__init__(c_instance)
         with open(os.path.join(os.path.dirname(__file__), 'config.json'), 'r') as f:
@@ -48,7 +50,17 @@ class LiveBridgeBrowser(ControlSurface):
             data = json.dumps({'id': rid, 'result': result, 'error': error}, ensure_ascii=True).encode('utf8')
             if len(data) > 60000:
                 data = json.dumps({'id': rid, 'error': 'Response too large; narrow request'}).encode('utf8')
-            self.sock.sendto(data, address)
+            # macOS limits a UDP datagram to net.inet.udp.maxdgram (9216 bytes by default);
+            # larger sendto() calls fail with EMSGSIZE. Split big replies into ordered frames
+            # that browser-client.cjs reassembles. Small replies stay a single plain frame.
+            if len(data) <= self.FRAME_BYTES:
+                self.sock.sendto(data, address)
+                return
+            text = data.decode('utf8')
+            parts = [text[i:i + self.FRAME_BYTES] for i in range(0, len(text), self.FRAME_BYTES)]
+            for index, part in enumerate(parts):
+                frame = json.dumps({'id': rid, 'frame': index, 'frames': len(parts), 'part': part}, ensure_ascii=True).encode('utf8')
+                self.sock.sendto(frame, address)
 
     def poll(self):
         if not self.running:

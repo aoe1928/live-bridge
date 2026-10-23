@@ -18,6 +18,7 @@ add('live_delete_track','Delete an explicitly requested normal or Return track i
 add('live_update_notes','Modify MIDI pitch, velocity, duration, timing, mute or probability by noteId, preserving untouched notes and expression fields. Read notes first; fingerprint required. Loop edits affect every repetition.','x_notes_update',{...finger,clipId:id,changes:arr(obj({noteId:id,...note},['noteId']),1)});
 add('live_add_notes','Add MIDI notes to an existing clip, preserving existing notes. Read notes first; timing uses absolute clip beats. Overlaps of the same pitch rejected.','x_notes_add',{...finger,clipId:id,notes:arr(obj(note,['pitch','start_time','duration']),1)});
 add('live_delete_notes','Delete only the specified MIDI note IDs; preserves all other notes. Read and back up notes first. Loop edits affect all repetitions.','x_notes_delete',{...finger,clipId:id,noteIds:arr(id,1)});
+add('live_create_audio_clip','Create an audio clip that references an audio file already on disk (absolute path; wav/aif/aiff/aifc/flac/mp3/m4a/ogg). Give exactly one of slotIndex (an empty Session clip slot on that track) or position (Arrangement start in beats). Audio tracks only; frozen tracks, occupied slots and running transport are rejected. The file is referenced, not copied: put it where the Set can collect it (for example the User Library) before calling. Response includes the created clip id, file path, length and warping state; read it with live_read_clip_settings to adjust.','x_audio_clip_create',{...guard,trackId:id,filePath:{type:'string',minLength:1,maxLength:1024},slotIndex:{type:'integer',minimum:0,maximum:4096},position:beat,name:name},['trackId','filePath','expectedSession']);
 add('live_read_clip_settings','Read clip name, color, loop, markers and mute plus fingerprint. Includes whether timing uses beats or seconds for unwarped audio.','x_clip_read',{clipId:id},null,true);
 add('live_set_clip_settings','Change clip name/color/loop boundaries/markers/mute. Read settings first. Loop changes affect every repetition; unwarped audio uses seconds and cannot enable looping. No clip movement.','x_clip_set',{...finger,clipId:id,settings:obj({name,colorIndex:color,loopStart:beat,loopEnd:beat,startMarker:beat,endMarker:beat,looping:bit,muted:bit},[])});
 add('live_list_scenes','Read Session scenes and slot clip identities with fingerprint.','x_scenes_read',{},null,true);
@@ -40,6 +41,14 @@ function compare(saved,current){
  return old.filter(p=>Math.abs(p.value-now.get(p.key).value)>0.00001).map(p=>({...p,savedValue:p.value,currentValue:now.get(p.key).value}));
 }
 async function executeProduction(op,a,request,base){
+ if(op==='x_audio_clip_create'){
+ if(!path.isAbsolute(a.filePath))throw Error('filePath must be absolute');
+ if(!/\.(wav|aif|aiff|aifc|flac|mp3|m4a|ogg)$/i.test(a.filePath))throw Error('Unsupported audio file extension');
+ let st;try{st=fs.statSync(a.filePath);}catch(e){throw Error('Audio file not found: '+a.filePath);}
+ if(!st.isFile())throw Error('filePath is not a file');
+ if((a.slotIndex===undefined)===(a.position===undefined))throw Error('Specify exactly one of slotIndex or position');
+ return request(op,a);
+ }
  const dir=path.join(base,'mix-snapshots');
  const load=id=>JSON.parse(fs.readFileSync(snapshotFile(dir,id),'utf8'));
  if(op==='snapshot_list')return fs.existsSync(dir)?fs.readdirSync(dir).filter(f=>/^[a-f0-9-]{36}\.json$/.test(f)).map(f=>{const j=load(f.slice(0,-5));return {snapshotId:j.snapshotId,name:j.name,date:j.date,session:j.state.session,trackIds:j.trackIds};}):[];
